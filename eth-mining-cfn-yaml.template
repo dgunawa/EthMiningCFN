@@ -1,0 +1,725 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: AWS CloudFormation Template to launch a Spot Fleet of Ether mining instances
+Parameters:
+  FleetSize:
+    Description: The target number of GPUs you want to use for mining
+    Type: Number
+    Default: 1
+    MinValue: 1
+    MaxValue: 100
+  SpotPrice:
+    Description: >-
+      The maximum amount, in USD, you're willing to spend per GPU, per hour
+      (default $0.20)
+    Type: Number
+    Default: 0.1
+    MinValue: 0.01
+    MaxValue: 10
+  Wallet:
+    Description: Your Ethereum wallet address
+    Type: String
+    Default: '0x5142c6078d779274Ee9a8Bf72f4f1ed2Efb71876'
+Mappings:
+  AWSRegion2AMI:
+    us-east-1:
+      AMI: ami-816b9bfb
+    us-east-2:
+      AMI: ami-7c5b7619
+    us-west-1:
+      AMI: ami-32655552
+    us-west-2:
+      AMI: ami-bce41dc4
+Conditions:
+  useast1: !Equals 
+    - !Ref 'AWS::Region'
+    - us-east-1
+  useast2: !Equals 
+    - !Ref 'AWS::Region'
+    - us-east-2
+  uswest1: !Equals 
+    - !Ref 'AWS::Region'
+    - us-west-1
+  uswest2: !Equals 
+    - !Ref 'AWS::Region'
+    - us-west-2
+Resources:
+  SpotFleetRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service: spotfleet.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ec2:DescribeImages'
+                  - 'ec2:DescribeSubnets'
+                  - 'ec2:RequestSpotInstances'
+                  - 'ec2:TerminateInstances'
+                  - 'ec2:DescribeInstanceStatus'
+                  - 'ec2:CreateTags'
+                Resource:
+                  - '*'
+              - Effect: Allow
+                Action: 'iam:PassRole'
+                Condition:
+                  StringEquals:
+                    'iam:PassedToService': ec2.amazonaws.com
+                Resource:
+                  - '*'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 34b15dc5-44b3-4e49-9a17-883c73b19ec3
+  EtherSpotFleetuseast1:
+    Type: 'AWS::EC2::SpotFleet'
+    Condition: useast1
+    Properties:
+      SpotFleetRequestConfigData:
+        IamFleetRole: !GetAtt 
+          - SpotFleetRole
+          - Arn
+        SpotPrice: !Ref SpotPrice
+        AllocationStrategy: lowestPrice
+        TargetCapacity: !Ref FleetSize
+        LaunchSpecifications:
+          - InstanceType: g3.4xlarge
+            WeightedCapacity: 1
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+          - InstanceType: g3.8xlarge
+            WeightedCapacity: 2
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+          - InstanceType: g3.16xlarge
+            WeightedCapacity: 4
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+          - InstanceType: g2.2xlarge
+            WeightedCapacity: 1
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+          - InstanceType: g2.8xlarge
+            WeightedCapacity: 4
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+          - InstanceType: p2.xlarge
+            WeightedCapacity: 1
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+          - InstanceType: p2.8xlarge
+            WeightedCapacity: 8
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+          - InstanceType: p2.16xlarge
+            WeightedCapacity: 16
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: e48410bc-a2fe-4e20-beeb-e644ef437f43
+  EtherSpotFleetuseast2:
+    Type: 'AWS::EC2::SpotFleet'
+    Condition: useast2
+    Properties:
+      SpotFleetRequestConfigData:
+        IamFleetRole: !GetAtt 
+          - SpotFleetRole
+          - Arn
+        SpotPrice: !Ref SpotPrice
+        AllocationStrategy: lowestPrice
+        TargetCapacity: !Ref FleetSize
+        LaunchSpecifications:
+          - InstanceType: g3.4xlarge
+            WeightedCapacity: 1
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+          - InstanceType: g3.8xlarge
+            WeightedCapacity: 2
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+          - InstanceType: g3.16xlarge
+            WeightedCapacity: 4
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: b86074c6-426b-4886-b96d-d2e8688eb78c
+  EtherSpotFleetuswest1:
+    Type: 'AWS::EC2::SpotFleet'
+    Condition: uswest1
+    Properties:
+      SpotFleetRequestConfigData:
+        IamFleetRole: !GetAtt 
+          - SpotFleetRole
+          - Arn
+        SpotPrice: !Ref SpotPrice
+        AllocationStrategy: lowestPrice
+        TargetCapacity: !Ref FleetSize
+        LaunchSpecifications:
+          - InstanceType: g3.4xlarge
+            WeightedCapacity: 1
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+          - InstanceType: g3.8xlarge
+            WeightedCapacity: 2
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+          - InstanceType: g3.16xlarge
+            WeightedCapacity: 4
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+          - InstanceType: g2.2xlarge
+            WeightedCapacity: 1
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+          - InstanceType: g2.8xlarge
+            WeightedCapacity: 4
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: ec4988bd-6569-4201-ac4b-cc404105b0c2
+  EtherSpotFleetuswest2:
+    Type: 'AWS::EC2::SpotFleet'
+    Condition: uswest2
+    Properties:
+      SpotFleetRequestConfigData:
+        IamFleetRole: !GetAtt 
+          - SpotFleetRole
+          - Arn
+        SpotPrice: !Ref SpotPrice
+        AllocationStrategy: lowestPrice
+        TargetCapacity: !Ref FleetSize
+        LaunchSpecifications:
+          - InstanceType: g3.4xlarge
+            WeightedCapacity: 1
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+          - InstanceType: g3.8xlarge
+            WeightedCapacity: 2
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+          - InstanceType: g3.16xlarge
+            WeightedCapacity: 4
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+          - InstanceType: g2.2xlarge
+            WeightedCapacity: 1
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+          - InstanceType: g2.8xlarge
+            WeightedCapacity: 4
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+          - InstanceType: p2.xlarge
+            WeightedCapacity: 1
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+          - InstanceType: p2.8xlarge
+            WeightedCapacity: 8
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+          - InstanceType: p2.16xlarge
+            WeightedCapacity: 16
+            ImageId: !FindInMap 
+              - AWSRegion2AMI
+              - !Ref 'AWS::Region'
+              - AMI
+            SecurityGroups:
+              - GroupId: !GetAtt 
+                  - InstanceSecurityGroup
+                  - GroupId
+            UserData: !Base64 
+              'Fn::Join':
+                - ''
+                - - |
+                    #!/bin/bash -xe
+                  - 'ethminer -U -F http://eth-us-east1.nanopool.org:8888/'
+                  - !Ref Wallet
+                  - >-
+                    /aws$(ec2metadata --instance-id)/a@b.com --cuda-devices
+                    $(nvidia-smi | grep 'Off' | awk '{print $2}' ORS=' ')
+                    --farm-recheck 200
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 52f0d253-7962-401a-beda-406b6d429f74
+  InstanceSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable SSH access via port 22
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 269d9275-5f54-4d29-9b4f-cf08b61919da
+Metadata:
+  'AWS::CloudFormation::Designer':
+    b86074c6-426b-4886-b96d-d2e8688eb78c:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 390
+        'y': 270
+      z: 1
+      embeds: []
+      isrelatedto:
+        - 34b15dc5-44b3-4e49-9a17-883c73b19ec3
+        - 269d9275-5f54-4d29-9b4f-cf08b61919da
+    34b15dc5-44b3-4e49-9a17-883c73b19ec3:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 300
+        'y': 80
+      z: 1
+      embeds: []
+    52f0d253-7962-401a-beda-406b6d429f74:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: -100
+        'y': 260
+      z: 1
+      embeds: []
+      isrelatedto:
+        - 34b15dc5-44b3-4e49-9a17-883c73b19ec3
+        - 269d9275-5f54-4d29-9b4f-cf08b61919da
+    ec4988bd-6569-4201-ac4b-cc404105b0c2:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 70
+        'y': 270
+      z: 1
+      embeds: []
+      isrelatedto:
+        - 34b15dc5-44b3-4e49-9a17-883c73b19ec3
+        - 269d9275-5f54-4d29-9b4f-cf08b61919da
+    269d9275-5f54-4d29-9b4f-cf08b61919da:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 60
+        'y': 80
+      z: 1
+      embeds: []
+    e48410bc-a2fe-4e20-beeb-e644ef437f43:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 230
+        'y': 270
+      z: 1
+      embeds: []
+      isrelatedto:
+        - 34b15dc5-44b3-4e49-9a17-883c73b19ec3
+        - 269d9275-5f54-4d29-9b4f-cf08b61919da
